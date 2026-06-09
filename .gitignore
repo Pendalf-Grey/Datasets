@@ -4,3 +4,4 @@ __pycache__/
 .DS_Store
 models/
 out/chunked_english_text_tables.jsonl
+out_pymupdf/

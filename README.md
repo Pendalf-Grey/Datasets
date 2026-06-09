@@ -9,6 +9,11 @@
 - `out/parsed_english_text_tables.jsonl`
 - `out/parsed_english_text_tables.debug.md`
 
+Альтернативный легкий первый этап, `parse_pymupdf_english.py`, создает PyMuPDF-записи без Docling/Torch:
+
+- `out_pymupdf/parsed_pymupdf_english_text.jsonl`
+- `out_pymupdf/parsed_pymupdf_english_text.debug.md`
+
 Второй этап, `chunk_docling_jsonl.py`, читает JSONL первого этапа и создает чанки с overlap:
 
 - `out/chunked_english_text_tables.jsonl`
@@ -32,6 +37,10 @@ source .env
 
 ## Запуск парсера PDF
 
+### Вариант 1: Docling
+
+Docling лучше сохраняет структуру документа и таблиц, но тянет тяжелые зависимости.
+
 Обычный запуск для PDF-файлов из папки `data/pdfs`:
 
 ```bash
@@ -49,6 +58,24 @@ python parce_docling_english.py --input "data/pdfs/HP ProLiant DL360 G6 Server M
 ```bash
 python parce_docling_english.py --input data/pdfs --out out --ocr
 ```
+
+### Вариант 2: PyMuPDF
+
+PyMuPDF — легкий вариант без Docling, Torch и отдельного heavy worker. Он хорошо подходит для digital PDF и RAG по тексту. Таблицы сохраняются как обычный текст, без надежного `table_json`.
+
+```bash
+python parse_pymupdf_english.py --input data/pdfs --out out_pymupdf
+```
+
+Для одного PDF:
+
+```bash
+python parse_pymupdf_english.py \
+  --input "data/pdfs/HP ProLiant DL360 G6 Server Maintenance and Service Guide.pdf" \
+  --out out_pymupdf
+```
+
+Выходной формат совместим с `chunk_docling_jsonl.py`.
 
 ## Запуск на Mac GPU
 
@@ -70,6 +97,14 @@ python parce_docling_english.py --input data/pdfs --out out --device auto
 
 ```bash
 python chunk_docling_jsonl.py --input out/parsed_english_text_tables.jsonl --out out/chunked_english_text_tables.jsonl
+```
+
+Для PyMuPDF-выхода:
+
+```bash
+python chunk_docling_jsonl.py \
+  --input out_pymupdf/parsed_pymupdf_english_text.jsonl \
+  --out out_pymupdf/chunked_pymupdf_english_text.jsonl
 ```
 
 По умолчанию:
