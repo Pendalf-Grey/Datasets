@@ -1,0 +1,4 @@
+docling>=2.70.0
+pandas>=2.2.0
+lingua-language-detector>=2.0.2
+orjson>=3.10.0
