@@ -1,22 +1,29 @@
-# Parsing PDF Docs
+# Datasets
 
-Проект извлекает из PDF англоязычный текст, заголовки и таблицы через Docling, а затем готовит overlapped JSONL-чанки для следующего этапа embeddings/RAG.
+Этот репозиторий хранит результаты парсинга PDF-документов и код пайплайна, который извлекает англоязычный текст, заголовки и таблицы через Docling или PyMuPDF, а затем готовит overlapped JSONL-чанки для embeddings/RAG.
 
-## Что получается на выходе
+## pdf-docling-hp-proliant-dl360-g6
 
-Первый этап, `parce_docling_english.py`, создает структурированные Docling-записи:
+Источник: `HP ProLiant DL360 G6 Server Maintenance and Service Guide.pdf`
 
-- `out/parsed_english_text_tables.jsonl`
-- `out/parsed_english_text_tables.debug.md`
+Файлы:
 
-Альтернативный легкий первый этап, `parse_pymupdf_english.py`, создает PyMuPDF-записи без Docling/Torch:
+- `pdf-docling-hp-proliant-dl360-g6/parsed_english_text_tables.jsonl` — структурированные записи, извлеченные Docling: заголовки, текст и таблицы.
+- `pdf-docling-hp-proliant-dl360-g6/parsed_english_text_tables.debug.md` — человекочитаемый Markdown для проверки результата парсинга.
+- `pdf-docling-hp-proliant-dl360-g6/chunked_english_text_tables.jsonl` — чанки с overlap для следующего этапа embeddings/RAG.
 
-- `out_pymupdf/parsed_pymupdf_english_text.jsonl`
-- `out_pymupdf/parsed_pymupdf_english_text.debug.md`
+Параметры чанкования:
 
-Второй этап, `chunk_docling_jsonl.py`, читает JSONL первого этапа и создает чанки с overlap:
+- размер чанка: 180 слов
+- overlap: 40 слов
+- таблицы включены как Markdown-текст
 
-- `out/chunked_english_text_tables.jsonl`
+Проверка последнего прогона:
+
+- parsed records: 534
+- chunks: 92
+- max words per chunk: 180
+- exact 40-word overlap pairs: 71
 
 ## Установка
 
@@ -131,7 +138,9 @@ python chunk_docling_jsonl.py --no-tables
 
 ## Формат parsed JSONL
 
-Каждая строка в `parsed_english_text_tables.jsonl` — это одна запись, извлеченная Docling: заголовок, текстовый блок или таблица. Все текстовые значения нормализуются и приводятся к нижнему регистру.
+Файл: `pdf-docling-hp-proliant-dl360-g6/parsed_english_text_tables.jsonl`
+
+Каждая строка — одна запись Docling: заголовок, текстовый блок или таблица. Все текстовые значения нормализованы и приведены к нижнему регистру.
 
 Пример текстовой записи:
 
@@ -172,9 +181,9 @@ python chunk_docling_jsonl.py --no-tables
 }
 ```
 
-Метаданные parsed-записи:
+Поля:
 
-- `doc_id` — SHA-256 хеш исходного PDF. Используется как стабильный идентификатор документа.
+- `doc_id` — SHA-256 хеш исходного PDF. Стабильный идентификатор документа.
 - `source_file` — имя PDF-файла, из которого была получена запись.
 - `content_type` — тип записи: `heading`, `text` или `table`.
 - `page_start` — первая страница, к которой Docling привязал элемент.
@@ -186,7 +195,11 @@ python chunk_docling_jsonl.py --no-tables
 
 ## Формат chunked JSONL
 
-Каждая строка в `chunked_english_text_tables.jsonl` — это один чанк для embeddings/RAG. Чанки собираются внутри одного документа и одного `section_path`; соседние чанки внутри секции имеют overlap.
+Файл: `pdf-docling-hp-proliant-dl360-g6/chunked_english_text_tables.jsonl`
+
+Каждая строка — один чанк для embeddings/RAG. Чанки собираются внутри одного документа и одного `section_path`; соседние чанки внутри секции имеют overlap.
+
+Пример:
 
 ```json
 {
@@ -204,7 +217,7 @@ python chunk_docling_jsonl.py --no-tables
 }
 ```
 
-Метаданные chunked-записи:
+Поля:
 
 - `chunk_id` — SHA-256 идентификатор чанка, рассчитанный из `doc_id`, `source_file`, номера чанка и текста.
 - `doc_id` — тот же идентификатор документа, что и в parsed JSONL.
